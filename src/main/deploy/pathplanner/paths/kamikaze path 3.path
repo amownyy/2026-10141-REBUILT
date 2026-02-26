@@ -1,0 +1,54 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 7.113345959595958,
+        "y": 1.378131313131314
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 8.705169451972948,
+        "y": -0.3396784963616317
+      },
+      "isLocked": false,
+      "linkedName": "kamikaze parh 2 end"
+    },
+    {
+      "anchor": {
+        "x": 7.9722474747474745,
+        "y": 6.325404040404041
+      },
+      "prevControl": {
+        "x": 7.8023231290221,
+        "y": 6.508777202916452
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": null
+    }
+  ],
+  "rotationTargets": [],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [],
+  "globalConstraints": {
+    "maxVelocity": 3.0,
+    "maxAcceleration": 3.0,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 0,
+    "rotation": 62.301
+  },
+  "reversed": false,
+  "folder": "kamikaze",
+  "idealStartingState": {
+    "velocity": 0,
+    "rotation": 62.301
+  },
+  "useDefaultConstraints": true
+}

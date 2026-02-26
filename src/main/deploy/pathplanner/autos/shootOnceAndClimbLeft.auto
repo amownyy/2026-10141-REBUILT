@@ -1,0 +1,31 @@
+{
+  "version": "2025.0",
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "path",
+          "data": {
+            "pathName": "sOACLeft Path 1"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "AutoLaunchSequence"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "ClimbUpL1Timed"
+          }
+        }
+      ]
+    }
+  },
+  "resetOdom": true,
+  "folder": "shootOnceAndClimb",
+  "choreoAuto": false
+}

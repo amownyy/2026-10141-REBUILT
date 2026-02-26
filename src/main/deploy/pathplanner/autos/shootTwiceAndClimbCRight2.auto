@@ -1,0 +1,67 @@
+{
+  "version": "2025.0",
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "path",
+          "data": {
+            "pathName": "sTAC Path 1"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "AutoLaunchSequence"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "sTAC Path 2"
+          }
+        },
+        {
+          "type": "wait",
+          "data": {
+            "waitTime": 1.5
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "sTAC Path 3"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "AutoLaunchSequence"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "sTAC Path 4"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "climbRight"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "ClimbUpL2Timed"
+          }
+        }
+      ]
+    }
+  },
+  "resetOdom": true,
+  "folder": "shootTwiceAndClimb",
+  "choreoAuto": false
+}

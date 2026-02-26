@@ -1,0 +1,37 @@
+{
+  "version": "2025.0",
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "path",
+          "data": {
+            "pathName": "sOAC Path 1"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "AutoLaunchSequence"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "climbRight"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "ClimbUpL2Timed"
+          }
+        }
+      ]
+    }
+  },
+  "resetOdom": true,
+  "folder": "shootOnceAndClimb",
+  "choreoAuto": false
+}
