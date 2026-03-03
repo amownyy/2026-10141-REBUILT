@@ -5,25 +5,20 @@
 package frc.robot.commands;
 
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.subsystems.DriveSubsystem;
 
-import static frc.robot.util.enums.Constants.DriveConstants.*;
-
 /* You should consider using the more terse Command factories API instead https://docs.wpilib.org/en/stable/docs/software/commandbased/organizing-command-based.html#defining-commands */
-public class Drive extends Command {
-
+public class AutoDrive extends Command {
     /** Creates a new Drive. */
-    private final DriveSubsystem driveSubsystem;
-    private final CommandXboxController controller;
-    private final boolean slowMode;
+    DriveSubsystem driveSubsystem;
+    double xSpeed, zRotation;
 
-    public Drive(DriveSubsystem driveSystem, CommandXboxController driverController, boolean isSlowMode) {
+    public AutoDrive(DriveSubsystem driveSystem, double xSpeed, double zRotation) {
         // Use addRequirements() here to declare subsystem dependencies.
         addRequirements(driveSystem);
         driveSubsystem = driveSystem;
-        controller = driverController;
-        slowMode = isSlowMode;
+        this.xSpeed = xSpeed;
+        this.zRotation = zRotation;
     }
 
     // Called when the command is initially scheduled.
@@ -32,17 +27,11 @@ public class Drive extends Command {
     }
 
     // Called every time the scheduler runs while the command is scheduled.
-    // The Y axis of the controller is inverted so that pushing the
-    // stick away from you (a negative value) drives the robot forwards (a positive
-    // value). The X axis is scaled down so the rotation is more easily
-    // controllable.
+    // Setting the values here instead of in initialize feeds the watchdog on the
+    // arcade drive object
     @Override
     public void execute() {
-        if (!slowMode) {
-            driveSubsystem.driveArcade(-controller.getLeftY() * DRIVE_FORWARD_MULTIPLIER, -controller.getRightX() * DRIVE_ROTATION_MULTIPLIER);
-        } else {
-            driveSubsystem.driveArcade(-controller.getLeftY() * SLOW_DRIVE_FORWARD_MULTIPLIER, -controller.getRightX() * SLOW_DRIVE_ROTATION_MULTIPLIER);
-        }
+        driveSubsystem.driveArcade(xSpeed, zRotation);
     }
 
     // Called once the command ends or is interrupted.

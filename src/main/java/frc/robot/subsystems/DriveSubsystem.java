@@ -4,33 +4,19 @@
 
 package frc.robot.subsystems;
 
-import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.commands.PathfindingCommand;
-import com.pathplanner.lib.config.RobotConfig;
-import com.pathplanner.lib.controllers.PPLTVController;
 import com.revrobotics.PersistMode;
-import com.revrobotics.RelativeEncoder;
 import com.revrobotics.ResetMode;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.config.SparkMaxConfig;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 
-import com.studica.frc.Navx;
-import edu.wpi.first.math.controller.PIDController;
-import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.math.kinematics.DifferentialDriveKinematics;
-import edu.wpi.first.math.kinematics.DifferentialDriveOdometry;
-import edu.wpi.first.math.kinematics.DifferentialDriveWheelSpeeds;
-import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
-import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-
-import static frc.robot.Constants.DriveConstants.*;
-import static frc.robot.Constants.AutoGyroConstants.*;
+import frc.robot.util.enums.Constants.DriveConstants;
 
 public class DriveSubsystem extends SubsystemBase {
     private final SparkMax leftLeader;
@@ -40,32 +26,14 @@ public class DriveSubsystem extends SubsystemBase {
 
     private final DifferentialDrive drive;
 
-    // Gyro and encoders could be added here as well for more advanced control and odometry, but are left out for simplicity
-    private final Navx navx = new Navx(0, 100);
-    private double currentAngle = 0;
-
-    // The left-side drive encoder
-    private final RelativeEncoder leftRelativeEncoder;
-
-    // The right-side drive encoder
-    private final RelativeEncoder rightRelativeEncoder;
-
-    private final DifferentialDriveOdometry odometry;
-    private final DifferentialDriveKinematics kinematics = new DifferentialDriveKinematics(trackwidthMeters);
-
-    private final Field2d field2d = new Field2d();
-
-    private final PIDController xPidController = new PIDController(PXController, IXController, DXController);
-    private final PIDController yawPidController = new PIDController(PYawController, KIYawController, DYawController);
-    private final PIDController turnPidController = new PIDController(PTurnController, KITurnController, DTurnController);
 
     /** Creates a new DriveSubsystem. */
     public DriveSubsystem() {
         // create brushed motors for drive
-        leftLeader = new SparkMax(LEFT_DRIVE_LEAD_ID, MotorType.kBrushed);
-        leftFollower = new SparkMax(LEFT_DRIVE_FOLLOW_ID, MotorType.kBrushed);
-        rightLeader = new SparkMax(RIGHT_DRIVE_LEAD_ID, MotorType.kBrushed);
-        rightFollower = new SparkMax(RIGHT_DRIVE_FOLLOW_ID, MotorType.kBrushed);
+        leftLeader = new SparkMax(DriveConstants.LEFT_DRIVE_LEAD_ID, MotorType.kBrushed);
+        leftFollower = new SparkMax(DriveConstants.LEFT_DRIVE_FOLLOW_ID, MotorType.kBrushed);
+        rightLeader = new SparkMax(DriveConstants.RIGHT_DRIVE_LEAD_ID, MotorType.kBrushed);
+        rightFollower = new SparkMax(DriveConstants.RIGHT_DRIVE_FOLLOW_ID, MotorType.kBrushed);
 
         // set up differential drive class
         drive = new DifferentialDrive(leftLeader, rightLeader);
@@ -85,7 +53,7 @@ public class DriveSubsystem extends SubsystemBase {
         // breakers.
         SparkMaxConfig config = new SparkMaxConfig();
         config.voltageCompensation(12);
-        config.smartCurrentLimit(DRIVE_MOTOR_CURRENT_LIMIT);
+        config.smartCurrentLimit(DriveConstants.DRIVE_MOTOR_CURRENT_LIMIT);
         config.idleMode(IdleMode.kBrake);
 
         // Set configuration to follow each leader and then apply it to corresponding
@@ -104,16 +72,16 @@ public class DriveSubsystem extends SubsystemBase {
         config.inverted(true);
         leftLeader.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
 
-        navx.resetYaw();
-        resetEncoders();
+        //navx.resetYaw();
+        //resetEncoders();
 
         // Get the encoders from the leaders (followers don't have encoders)
-        leftRelativeEncoder = leftLeader.getEncoder();
-        rightRelativeEncoder = rightLeader.getEncoder();
+        //leftRelativeEncoder = leftLeader.getEncoder();
+        //rightRelativeEncoder = rightLeader.getEncoder();
 
-        odometry = new DifferentialDriveOdometry(navx.getRotation2d(), getLeftRelativeEncoderDistance(), getRightRelativeEncoderDistance());
+        //odometry = new DifferentialDriveOdometry(navx.getRotation2d(), getLeftRelativeEncoderDistance(), getRightRelativeEncoderDistance());
 
-        try {
+        /*try {
             RobotConfig robotConfig = RobotConfig.fromGUISettings();
             AutoBuilder.configure(
                     this::getPose, // Robot pose supplier
@@ -131,7 +99,7 @@ public class DriveSubsystem extends SubsystemBase {
             );
         } catch (Exception e) {
             DriverStation.reportError("Failed to load PathPlanner config: " + e.getMessage(), e.getStackTrace());
-        }
+        }*/
 
         // Warmup pathfinding command
         CommandScheduler.getInstance().schedule(PathfindingCommand.warmupCommand());
@@ -139,8 +107,8 @@ public class DriveSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
-        odometry.update(navx.getRotation2d(), getLeftRelativeEncoderDistance(), getRightRelativeEncoderDistance());
-        field2d.setRobotPose(odometry.getPoseMeters());
+        //odometry.update(navx.getRotation2d(), getLeftRelativeEncoderDistance(), getRightRelativeEncoderDistance());
+        //field2d.setRobotPose(odometry.getPoseMeters());
     }
 
     public void driveArcade(double xSpeed, double zRotation) {
@@ -157,10 +125,10 @@ public class DriveSubsystem extends SubsystemBase {
     public void drive(ChassisSpeeds speeds){
         drive.feed();
 
-        xPidController.setSetpoint(speeds.vxMetersPerSecond);
-        yawPidController.setSetpoint(speeds.omegaRadiansPerSecond);
+        //xPidController.setSetpoint(speeds.vxMetersPerSecond);
+        //yawPidController.setSetpoint(speeds.omegaRadiansPerSecond);
 
-        drive.arcadeDrive(xPidController.calculate(getRobotVelocity().vxMetersPerSecond), yawPidController.calculate(getRobotVelocity().omegaRadiansPerSecond));
+        //drive.arcadeDrive(xPidController.calculate(getRobotVelocity().vxMetersPerSecond), yawPidController.calculate(getRobotVelocity().omegaRadiansPerSecond));
     }
 
     /**
@@ -168,52 +136,52 @@ public class DriveSubsystem extends SubsystemBase {
      *
      * @return The current Pose2d of the robot
      */
-    public Pose2d getPose() {
+    /*public Pose2d getPose() {
         return odometry.getPoseMeters();
-    }
+    }*/
 
     /**
      * Resets the odometry to a given pose.
      *
      * @param pose The pose to reset to
      */
-    public void resetOdometry(Pose2d pose) {
+    /*public void resetOdometry(Pose2d pose) {
         resetEncoders();
         odometry.resetPosition(navx.getRotation2d(), getLeftRelativeEncoderDistance(), getRightRelativeEncoderDistance(), pose);
-    }
+    }*/
 
     /**
      * Gets the current robot velocity as ChassisSpeeds.
      *
      * @return The current robot-relative ChassisSpeeds
      */
-    public ChassisSpeeds getRobotVelocity() {
+    /*public ChassisSpeeds getRobotVelocity() {
         return kinematics.toChassisSpeeds(getWheelSpeeds());
-    }
+    }*/
 
     /**
      * Returns the current wheel speeds of the robot.
      *
      * @return The current wheel speeds.
      */
-    public DifferentialDriveWheelSpeeds getWheelSpeeds() {
+    /*public DifferentialDriveWheelSpeeds getWheelSpeeds() {
         return new DifferentialDriveWheelSpeeds(leftRelativeEncoder.getVelocity(), rightRelativeEncoder.getVelocity());
-    }
+    }*/
 
     /** Resets the drive encoders to currently read a position of 0. */
-    private void resetEncoders() {
+    /*private void resetEncoders() {
         leftRelativeEncoder.setPosition(0);
         rightRelativeEncoder.setPosition(0);
-    }
+    }*/
 
     /** Helper method to convert encoder positions to distances. This is needed because the encoders return a position in "rotations" which needs to be converted to a distance in meters. The conversion depends on the wheel circumference and the gear ratio between the motor and the wheels. */
-    private double getLeftRelativeEncoderDistance() {
+    /*private double getLeftRelativeEncoderDistance() {
         return (leftRelativeEncoder.getPosition() * WHEEL_CIRCUMFERENCE) / GEAR_RATIO;
-    }
+    }*/
 
     /** Helper method to convert encoder positions to distances. This is needed because the encoders return a position in "rotations" which needs to be converted to a distance in meters. The conversion depends on the wheel circumference and the gear ratio between the motor and the wheels. */
-    private double getRightRelativeEncoderDistance() {
+    /*private double getRightRelativeEncoderDistance() {
         return (rightRelativeEncoder.getPosition() * WHEEL_CIRCUMFERENCE) / GEAR_RATIO;
-    }
+    }*/
 
 }

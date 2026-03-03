@@ -4,20 +4,30 @@
 
 package frc.robot;
 
+import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
-import static frc.robot.Constants.OperatorConstants.*;
 
-import frc.robot.commands.ClimbDown;
-import frc.robot.commands.ClimbUp;
+import frc.robot.commands.AutoCommand;
 import frc.robot.commands.Drive;
-import frc.robot.commands.Eject;
-import frc.robot.commands.Intake;
-import frc.robot.commands.LaunchSequence;
 import frc.robot.subsystems.DriveSubsystem;
 import frc.robot.subsystems.FuelSubsystem;
 import frc.robot.subsystems.ClimberSubsystem;
+import frc.robot.util.ShooterCalculator;
+import frc.robot.util.dashboard.LoggedNetworkInput;
+import frc.robot.util.dashboard.MultiMotorInfoSendable;
+import frc.robot.util.enums.PositionCalibrationLocation;
+
+import static frc.robot.util.enums.Constants.ControllerConstants;
+import static frc.robot.util.enums.Constants.FuelConstants;
+import static frc.robot.util.enums.Constants.ClimberConstants;
 
 /**
  * This class is where the bulk of the robot should be declared. Since
@@ -27,32 +37,40 @@ import frc.robot.subsystems.ClimberSubsystem;
  * commands, and trigger mappings) should be declared here.
  */
 public class RobotContainer {
-    // The robot's subsystems
-    private final DriveSubsystem driveSubsystem = new DriveSubsystem();
-    private final FuelSubsystem fuelSubsystem = new FuelSubsystem();
-    private final ClimberSubsystem climberSubsystem = new ClimberSubsystem();
+    // Initializes subsystems
+    private final DriveSubsystem driveSubsystem;
+    private final ClimberSubsystem climberSubsystem;
+    private final FuelSubsystem fuelSubsystem;
 
-    // The robot's auto chooser. This is where you would add any autonomous commands you want to be able to run
-    private final Autos autos = new Autos(fuelSubsystem, climberSubsystem);
+    private final ShooterCalculator shooterCalculator;
+    private final MultiMotorInfoSendable motorInfo = new MultiMotorInfoSendable();
 
-    // The driver's controller
-    private final CommandXboxController driverController = new CommandXboxController(DRIVER_CONTROLLER_PORT);
+    // Initializes controllers
+    private final CommandXboxController driverController =
+            new CommandXboxController(ControllerConstants.DRIVER_CONTROLLER_PORT);
+    private final CommandXboxController operatorController = ControllerConstants.OPERATOR_ENABLED
+            ? new CommandXboxController(ControllerConstants.OPERATOR_CONTROLLER_PORT)
+            : null;
 
-    // The operator's controller, by default it is set up to use a single controller
-    private final CommandXboxController operatorController = new CommandXboxController(OPERATOR_CONTROLLER_PORT);
+    private final SendableChooser<Command> autoChooser;
+
+    private boolean useOdometry = true;
+    private final Trigger useOdometryTrigger = new Trigger(() -> useOdometry);
 
     /**
      * The container for the robot. Contains subsystems, OI devices, and commands.
      */
     public RobotContainer() {
+        driveSubsystem = new DriveSubsystem();
+        shooterCalculator = new ShooterCalculator(() -> new Pose2d(0, 0, Rotation2d.kZero));
+        fuelSubsystem = FuelConstants.FUEL_SUBSYSTEM_ENABLED ? new FuelSubsystem(shooterCalculator, motorInfo) : null;
+        climberSubsystem = ClimberConstants.CLIMBER_ENABLED ? new ClimberSubsystem(motorInfo) : null;
+
+        // autoChooser = AutoBuilder.buildAutoChooser("Epic Auto");
+        autoChooser = new SendableChooser<>();
+        autoChooser.setDefaultOption("Autonomous", new AutoCommand(driveSubsystem, fuelSubsystem));
+
         configureBindings();
-
-        // Set the options to show up in the Dashboard for selecting auto modes. If you
-        // add additional auto modes you can add additional lines here with
-        // autoChooser.addOption
-        //autoChooser.setDefaultOption("Autonomous", new ExampleAuto(driveSubsystem, fuelSubsystem));
-
-        // Already adding the autos to the dashboard in the constructor of the Autos class, so this is not needed
     }
 
     /**
@@ -67,35 +85,73 @@ public class RobotContainer {
      * joysticks}.
      */
     private void configureBindings() {
-        // While the left bumper on the driver controller is held, drive in slow mode
+        // for testing
+        final boolean fieldOriented = true;
+        final boolean forceRobotOrientedRotation = true;
+
+        /*if (fieldOriented) {
+            if (forceRobotOrientedRotation && operatorController != null) {
+                driveSubsystem.setDefaultCommand(driveSubsystem.driveFieldAndRobotOrientedCommand(
+                        () -> -driverController.getLeftY(),
+                        () -> -driverController.getLeftX(),
+                        () -> -driverController.getRightX(),
+                        () -> -operatorController.getLeftX(),
+                        () -> -operatorController.getLeftY()));
+                driverController.rightStick().whileTrue(driveSubsystem.lockYawTowardsVelocity());
+            } else {
+                driveSubsystem.setDefaultCommand(driveSubsystem.driveFieldOrientedHeadingCommand(
+                        () -> -driverController.getLeftY(),
+                        () -> -driverController.getLeftX(),
+                        () -> -driverController.getRightX(),
+                        () -> -driverController.getRightY()));
+            }
+        } else {
+            driveSubsystem.setDefaultCommand(driveSubsystem.driveRobotOrientedCommand(
+                    () -> MathUtil.applyDeadband(-driverController.getLeftY(), 0.1),
+                    () -> MathUtil.applyDeadband(-driverController.getLeftX(), 0.1),
+                    () -> -driverController.getRightX()));
+        }
+
+        driverController.start().onTrue(new InstantCommand(driveSubsystem::zeroGyroWithAlliance));
+        driverController.y().whileTrue(driveSubsystem.faceTowardsHubCommand());
+
+        if (operatorController != null) {
+            operatorController.start().whileTrue(driveSubsystem.straightenWheelsCommand());
+            operatorController
+                    .leftTrigger()
+                    .whileTrue(driveSubsystem.resetPoseFromCalibrationPosition(
+                            PositionCalibrationLocation.LEFT_TRENCH_OUTER));
+            operatorController
+                    .leftBumper()
+                    .whileTrue(driveSubsystem.resetPoseFromCalibrationPosition(
+                            PositionCalibrationLocation.LEFT_DEPOT_CORNER));
+            operatorController
+                    .rightTrigger()
+                    .whileTrue(driveSubsystem.resetPoseFromCalibrationPosition(
+                            PositionCalibrationLocation.RIGHT_TRENCH_OUTER));
+            operatorController
+                    .rightBumper()
+                    .whileTrue(driveSubsystem.resetPoseFromCalibrationPosition(
+                            PositionCalibrationLocation.RIGHT_OUTPOST_CORNER));
+            operatorController.x().whileTrue(driveSubsystem.enableManualBumpLock());
+        }*/
         driverController.leftBumper().whileTrue(new Drive(driveSubsystem, driverController, true));
-
-        // While the left bumper on operator controller is held, intake Fuel
-        operatorController.leftBumper().whileTrue(new Intake(fuelSubsystem));
-        // While the right bumper on the operator controller is held, spin up for 1
-        // second, then launch fuel. When the button is released, stop.
-        operatorController.rightBumper().whileTrue(new LaunchSequence(fuelSubsystem));
-        // While the A button is held on the operator controller, eject fuel back out
-        // the intake
-        operatorController.a().whileTrue(new Eject(fuelSubsystem));
-        // While the down arrow on the directional pad is held it will unclimb the robot
-        operatorController.povDown().whileTrue(new ClimbDown(climberSubsystem));
-        // While the up arrow on the directional pad is held it will climb the robot
-        operatorController.povUp().whileTrue(new ClimbUp(climberSubsystem));
-
-        // Set the default command for the drive subsystem to the command provided by
-        // factory with the values provided by the joystick axes on the driver
-        // controller. The Y axis of the controller is inverted so that pushing the
-        // stick away from you (a negative value) drives the robot forwards (a positive
-        // value)
         driveSubsystem.setDefaultCommand(new Drive(driveSubsystem, driverController, false));
 
-        //noinspection Convert2MethodRef
-        fuelSubsystem.setDefaultCommand(fuelSubsystem.run(() -> fuelSubsystem.stop()));
+        if (fuelSubsystem != null && operatorController != null) {
+            operatorController.leftBumper().whileTrue(fuelSubsystem.intake());
+            operatorController.a().whileTrue(fuelSubsystem.eject());
+            operatorController.rightBumper().whileTrue(fuelSubsystem.windUpAndLaunch());
+        }
 
-        //noinspection Convert2MethodRef
-        climberSubsystem.setDefaultCommand(climberSubsystem.run(() -> climberSubsystem.stop()));
+        if (climberSubsystem != null && operatorController != null) {
+            operatorController.povUp().whileTrue(climberSubsystem.climb());
+            operatorController.povDown().whileTrue(climberSubsystem.lower());
+            operatorController.povLeft().whileTrue(climberSubsystem.findLimit());
+        }
     }
+
+    public void periodic() {}
 
     /**
      * Use this to pass the autonomous command to the main {@link Robot} class.
@@ -104,7 +160,23 @@ public class RobotContainer {
      */
     public Command getAutonomousCommand() {
         // An example command will be run in autonomous
-        //return autoChooser.getSelected();
-        return autos.getAutonomousCommand();
+        return autoChooser.getSelected();
+    }
+
+    public void initSmartDashboard() {
+        SmartDashboard.putData("Auto Chooser", autoChooser);
+        SmartDashboard.putData(
+                "RobotContainer",
+                builder -> builder.addBooleanProperty("Use Odometry", () -> useOdometry, v -> useOdometry = v));
+        SmartDashboard.putData("Motor Info", motorInfo);
+    }
+
+    public void preSchedulerUpdate() {
+        shooterCalculator.clearShotCache();
+        LoggedNetworkInput.runAllPeriodic();
+    }
+
+    public void postSchedulerUpdate() {
+        NetworkTableInstance.getDefault().flush();
     }
 }
